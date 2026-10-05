@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIOVTUE-memos Embed Demo</title>
+    <style>
+      :root {
+        --accent: #576b95;
+        --line: #e8e8e8;
+        --bg: #f7f7f7;
+      }
+      body {
+        margin: 0;
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: #191919;
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 8px;
+      }
+      .sub {
+        color: #888;
+        margin-bottom: 20px;
+      }
+      .memo {
+        background: #fff;
+        border-bottom: 1px solid var(--line);
+        padding: 16px 0;
+      }
+      .memo p {
+        margin: 0 0 8px;
+        white-space: pre-wrap;
+      }
+      .meta {
+        color: #888;
+        font-size: 12px;
+      }
+      .actions {
+        margin-top: 8px;
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        border: 0;
+        background: #eee;
+        border-radius: 4px;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+      .comments {
+        margin-top: 8px;
+        background: #f3f3f5;
+        padding: 8px 10px;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      .comments .name {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .config {
+        background: #fff;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+      .config input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>AIOVTUE-memos 嵌入示例</h1>
+      <p class="sub">把下面的 API 地址换成你的 Worker 域名后，即可复制到 Hugo 模板使用。</p>
+
+      <div class="config">
+        <label for="apiBase">API Base</label>
+        <input id="apiBase" value="http://127.0.0.1:8787" />
+      </div>
+
+      <div id="feed">加载中…</div>
+    </div>
+
+    <script type="module">
+      const CLIENT_KEY = "hugo_memos_embed_client";
+      function clientId() {
+        let id = localStorage.getItem(CLIENT_KEY);
+        if (!id) {
+          id = crypto.randomUUID();
+          localStorage.setItem(CLIENT_KEY, id);
+        }
+        return id;
+      }
+
+      function escapeHtml(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      async function load() {
+        const base = document.getElementById("apiBase").value.replace(/\/$/, "");
+        const res = await fetch(`${base}/api/posts?limit=20`, {
+          headers: { "X-Client-Id": clientId() },
+        });
+        const json = await res.json();
+        const feed = document.getElementById("feed");
+        if (!json.ok) {
+          feed.textContent = json.error || "加载失败";
+          return;
+        }
+        if (!json.data.length) {
+          feed.textContent = "暂无动态";
+          return;
+        }
+
+        feed.innerHTML = "";
+        for (const post of json.data) {
+          const commentsRes = await fetch(`${base}/api/posts/${post.id}/comments`);
+          const commentsJson = await commentsRes.json();
+          const comments = commentsJson.data || [];
+
+          const el = document.createElement("article");
+          el.className = "memo";
+          el.innerHTML = `
+            <p>${escapeHtml(post.content)}</p>
+            <div class="meta">${new Date(post.created_at).toLocaleString()} · ♥ ${post.like_count} · 评论 ${post.comment_count}</div>
+            <div class="actions">
+              <button data-like>${post.liked ? "取消赞" : "点赞"}</button>
+              <button data-comment>评论</button>
+            </div>
+            <div class="comments">
+              ${comments
+                .map((c) => `<div><span class="name">${escapeHtml(c.author_name)}</span>：${escapeHtml(c.content)}</div>`)
+                .join("")}
+            </div>
+          `;
+
+          el.querySelector("[data-like]").onclick = async () => {
+            const method = post.liked ? "DELETE" : "POST";
+            const author_name = post.liked
+              ? undefined
+              : prompt("昵称", localStorage.getItem("hugo_memos_display_name") || "访客") || "访客";
+            if (!post.liked) localStorage.setItem("hugo_memos_display_name", author_name);
+            await fetch(`${base}/api/posts/${post.id}/likes`, {
+              method,
+              headers: {
+                "Content-Type": "application/json",
+                "X-Client-Id": clientId(),
+              },
+              body: JSON.stringify(post.liked ? {} : { author_name }),
+            });
+            load();
+          };
+
+          el.querySelector("[data-comment]").onclick = async () => {
+            const author_name = prompt("昵称", "访客") || "访客";
+            const content = prompt("评论内容");
+            if (!content) return;
+            await fetch(`${base}/api/posts/${post.id}/comments`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ author_name, content }),
+            });
+            load();
+          };
+
+          feed.appendChild(el);
+        }
+      }
+
+      document.getElementById("apiBase").addEventListener("change", load);
+      load();
+    </script>
+  </body>
+</html>

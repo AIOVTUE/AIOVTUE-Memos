@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#df9193" />
+    <title>站点设置</title>
+    <script src="/js/theme-boot.js"></script>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <svg class="svg-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <symbol id="icon-refresh" viewBox="0 0 24 24">
+        <path
+          fill="currentColor"
+          d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"
+        />
+      </symbol>
+    </svg>
+    <div class="settings-page">
+      <section class="gate" id="gate">
+        <h2 id="gateTitle">管理登录</h2>
+        <p class="hint" id="gateHint">账号密码保存在数据库。</p>
+        <div class="form-field">
+          <label for="username">账号</label>
+          <input id="username" type="text" maxlength="32" autocomplete="username" placeholder="管理员账号" />
+        </div>
+        <div class="form-field">
+          <label for="password">密码</label>
+          <input id="password" type="password" autocomplete="current-password" />
+        </div>
+        <div class="form-field" id="password2Field" hidden>
+          <label for="password2">确认密码</label>
+          <input id="password2" type="password" autocomplete="new-password" />
+        </div>
+        <button class="btn" id="loginBtn" type="button">进入设置</button>
+        <button class="btn-text settings-theme-btn" type="button" id="gateThemeBtn">深色模式</button>
+      </section>
+
+      <section class="settings-shell" id="panel" hidden>
+        <div class="settings-sidebar-mask" id="settingsSidebarMask" hidden></div>
+        <aside class="settings-sidebar" id="settingsSidebar">
+          <a class="settings-sidebar__brand" href="/" aria-label="返回首页" title="返回首页">
+            <span class="settings-sidebar__avatar" id="sidebarAvatar"></span>
+            <div class="settings-sidebar__titles">
+              <strong id="sidebarSubtitle">AIOVTUE-memos</strong>
+            </div>
+          </a>
+          <nav class="settings-nav" id="settingsTabs" aria-label="设置分类">
+            <button type="button" class="settings-nav__item is-active" data-tab="site">
+              <svg class="settings-nav__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.61l-1.92-3.32a.5.5 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.5.5 0 0 0 13.93 2h-3.86a.5.5 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.59.22L2.71 8.87a.5.5 0 0 0 .12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.83 14.52a.5.5 0 0 0-.12.61l1.92 3.32c.12.22.37.3.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.86c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.5.5 0 0 0-.12-.61l-2.03-1.58ZM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2Z"
+                />
+              </svg>
+              基本设置
+            </button>
+            <button type="button" class="settings-nav__item" data-tab="posts">
+              <svg class="settings-nav__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm1 2v12h14V6H5Zm2 2h10v2H7V8Zm0 4h10v2H7v-2Zm0 4h6v2H7v-2Z"
+                />
+              </svg>
+              动态管理
+            </button>
+            <button type="button" class="settings-nav__item" data-tab="comments">
+              <svg class="settings-nav__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M20 2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14l4 4V4a2 2 0 0 0-2-2Zm-2 12H6v-2h12v2Zm0-3H6V9h12v2Zm0-3H6V6h12v2Z"
+                />
+              </svg>
+              评论管理
+            </button>
+            <button type="button" class="settings-nav__item" data-tab="likes">
+              <svg class="settings-nav__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 21.35 10.55 20.03C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35Z"
+                />
+              </svg>
+              点赞管理
+            </button>
+            <button type="button" class="settings-nav__item" data-tab="page-likes" hidden>
+              <svg class="settings-nav__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M2 20h4V10H2v10Zm20-7.12c.11-.25.17-.52.17-.8V11a2 2 0 0 0-2-2h-5.31l.95-4.57c.1-.5.11-.83.11-1.12A1.5 1.5 0 0 0 14.5 2c-.4 0-.78.16-1.06.44L7 9.22V18c0 .55.45 1 1 1h8.31c.73 0 1.39-.41 1.71-1.06L22 12.88Z"
+                />
+              </svg>
+              页面点赞
+            </button>
+          </nav>
+        </aside>
+
+        <div class="settings-main">
+          <header class="settings-main__bar">
+            <button
+              type="button"
+              class="settings-menu-toggle"
+              id="settingsMenuBtn"
+              aria-expanded="false"
+              aria-controls="settingsSidebar"
+            >
+              <span class="settings-menu-toggle__icon" aria-hidden="true"></span>
+              <h1 id="settingsPaneTitle">基本设置</h1>
+            </button>
+            <button class="btn" type="button" id="saveBtn">保存</button>
+          </header>
+          <div class="settings-main__body">
+            <div class="settings-pane" data-pane="site">
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">站点资料</h2>
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="site_title">标题</label>
+                  <input id="site_title" maxlength="300" placeholder="动态" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="nickname">昵称</label>
+                  <input id="nickname" maxlength="300" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="site_description">简介</label>
+                  <textarea id="site_description" rows="2" maxlength="500" placeholder="一句话介绍站点"></textarea>
+                </div>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">头像与封面</h2>
+                </div>
+                <div class="settings-media-grid">
+                  <div class="form-field form-field--compact">
+                    <label for="avatar">头像</label>
+                    <input id="avatar" maxlength="500" placeholder="/img/toux.webp 或 https://…" />
+                    <div class="media-preview media-preview--avatar" id="avatarPreview"></div>
+                  </div>
+                  <div class="form-field form-field--compact">
+                    <label for="cover">横幅</label>
+                    <input id="cover" maxlength="500" placeholder="/hero/hero-1.mp4 或 https://…" />
+                    <div class="media-preview media-preview--cover" id="coverPreview"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">评论邮件通知</h2>
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="resend_api_key">Resend API Key</label>
+                  <div class="input-with-btn">
+                    <input id="resend_api_key" type="password" maxlength="200" autocomplete="new-password" placeholder="re_xxxxxxxx" />
+                    <button class="btn danger" type="button" id="clearResendKeyBtn">清除key</button>
+                  </div>
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="admin_email">管理员邮箱</label>
+                  <input id="admin_email" type="email" maxlength="120" placeholder="you@example.com" autocomplete="email" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="mail_from">Resend 发件地址</label>
+                  <input id="mail_from" type="email" maxlength="120" placeholder="onboarding@resend.dev 或你的已验证域名" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="mail_from_name">发件显示名</label>
+                  <input id="mail_from_name" maxlength="80" placeholder="动态通知" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="site_url">站点公开地址</label>
+                  <input id="site_url" maxlength="300" placeholder="https://aiovtue-memos.xxx.workers.dev" />
+                </div>
+                <div class="settings-notify-footer">
+                  <div class="form-field form-field--compact">
+                    <label for="notify_enabled">启用通知</label>
+                    <label class="switch">
+                      <input id="notify_enabled" type="checkbox" role="switch" />
+                      <span class="switch__ui"></span>
+                    </label>
+                  </div>
+                  <button class="btn secondary" type="button" id="notifyTestBtn">发送测试邮件</button>
+                </div>
+                <p class="hint" id="notifyTestStatus"></p>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">跨域（CORS）</h2>
+                </div>
+                <p class="hint settings-card__intro">
+                  填写博客等网站地址，多个用英文逗号隔开，不要带路径或末尾 <code>/</code>。留空则不限制。
+                </p>
+                <div class="form-field form-field--compact">
+                  <label for="cors_origins">允许的网站</label>
+                  <input id="cors_origins" maxlength="2000" placeholder="https://your-blog.example.com,http://127.0.0.1:1313" />
+                </div>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">文章点赞（博客接入）</h2>
+                </div>
+                <p class="hint settings-card__intro">
+                  开启后，把博客域名填进上方跨域，页面引入 <code>/js/page-like.js</code>，写操作使用本站登录密码。
+                </p>
+                <div class="form-field form-field--compact">
+                  <label for="page_likes_enabled">启用文章点赞</label>
+                  <label class="switch">
+                    <input id="page_likes_enabled" type="checkbox" role="switch" />
+                    <span class="switch__ui"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">管理员账号</h2>
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="account_username">账号</label>
+                  <input id="account_username" maxlength="32" autocomplete="username" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="account_current_password">当前密码</label>
+                  <input id="account_current_password" type="password" autocomplete="current-password" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="account_new_password">新密码</label>
+                  <input id="account_new_password" type="password" autocomplete="new-password" placeholder="留空则不修改密码" />
+                </div>
+                <div class="settings-actions settings-actions--start">
+                  <button class="btn secondary" type="button" id="accountSaveBtn">更新账号</button>
+                </div>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">动态导入 / 导出</h2>
+                </div>
+                <p class="hint settings-card__intro">
+                  导入选 <code>content/moments</code> 里的 md；导出解压到站点根目录即可替换。
+                </p>
+                <div class="form-field form-field--compact">
+                  <label for="importFiles">选择文件</label>
+                  <div class="file-field">
+                    <input id="importFiles" type="file" accept=".md,.markdown,.json,text/markdown,application/json" multiple hidden />
+                    <button class="btn secondary file-field__btn" type="button" id="importFilesPick">选择文件</button>
+                    <span class="file-field__name" id="importFilesName">未选择文件</span>
+                  </div>
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="importMode">导入模式</label>
+                  <select id="importMode">
+                    <option value="append">追加（跳过相同内容+时间）</option>
+                    <option value="replace">替换（清空现有动态后导入）</option>
+                  </select>
+                </div>
+                <div class="settings-actions settings-actions--start">
+                  <button class="btn" type="button" id="importBtn">导入</button>
+                  <button class="btn secondary" type="button" id="exportBtn">导出</button>
+                </div>
+                <p class="hint" id="importStatus"></p>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">WebDAV 备份</h2>
+                </div>
+                <p class="hint settings-card__intro">
+                  把动态备份到网盘，远端最多保留 3 个文件。部署后按周期自动备份。
+                </p>
+                <div class="form-field form-field--compact">
+                  <label for="webdav_url">服务器地址</label>
+                  <input id="webdav_url" maxlength="500" placeholder="https://dav.example.com/dav" autocomplete="off" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="webdav_username">用户名</label>
+                  <input id="webdav_username" maxlength="120" autocomplete="username" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="webdav_password">密码</label>
+                  <div class="input-with-btn">
+                    <input id="webdav_password" type="password" maxlength="200" autocomplete="new-password" />
+                    <button class="btn danger" type="button" id="clearWebdavPasswordBtn">清除密码</button>
+                  </div>
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="webdav_folder">目录</label>
+                  <input id="webdav_folder" maxlength="200" placeholder="AIOVTUE-memos" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="webdav_interval">备份周期</label>
+                  <select id="webdav_interval">
+                    <option value="daily">每天</option>
+                    <option value="weekly">每周</option>
+                    <option value="monthly">每月</option>
+                  </select>
+                </div>
+                <div class="settings-notify-footer">
+                  <div class="form-field form-field--compact">
+                    <label for="webdav_enabled">启用自动备份</label>
+                    <label class="switch">
+                      <input id="webdav_enabled" type="checkbox" role="switch" />
+                      <span class="switch__ui"></span>
+                    </label>
+                  </div>
+                  <button class="btn secondary" type="button" id="webdavBackupBtn">立即备份</button>
+                </div>
+                <p class="hint" id="webdavStatus"></p>
+              </div>
+            </div>
+
+            <div class="settings-pane" data-pane="posts" hidden>
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <div class="settings-card__lead">
+                    <h2 class="settings-card__title">动态列表</h2>
+                    <button class="btn-text" type="button" id="selectPostsBtn">选择</button>
+                    <button class="btn danger manage-bulk-del" type="button" id="deleteSelectedPostsBtn" hidden disabled>
+                      删除
+                    </button>
+                  </div>
+                  <button class="icon-btn refresh-btn" type="button" id="refreshPostsBtn" title="刷新" aria-label="刷新">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><use href="#icon-refresh" /></svg>
+                  </button>
+                </div>
+                <p class="hint" id="postsMeta" style="margin-top: 0">加载中…</p>
+                <div class="manage-list" id="postsList"></div>
+                <nav class="manage-pager" id="postsPager" hidden aria-label="动态列表分页"></nav>
+              </div>
+            </div>
+
+            <div class="settings-pane" data-pane="comments" hidden>
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">有评论的动态</h2>
+                  <button class="icon-btn refresh-btn" type="button" id="refreshCommentsBtn" title="刷新" aria-label="刷新">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><use href="#icon-refresh" /></svg>
+                  </button>
+                </div>
+                <p class="hint" id="commentsMeta" style="margin-top: 0">加载中…</p>
+                <div class="manage-list" id="commentsList"></div>
+              </div>
+            </div>
+
+            <div class="settings-pane" data-pane="likes" hidden>
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">有点赞的动态</h2>
+                  <button class="icon-btn refresh-btn" type="button" id="refreshLikesBtn" title="刷新" aria-label="刷新">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><use href="#icon-refresh" /></svg>
+                  </button>
+                </div>
+                <p class="hint" id="likesMeta" style="margin-top: 0">加载中…</p>
+                <div class="manage-list" id="likesList"></div>
+              </div>
+            </div>
+
+            <div class="settings-pane" data-pane="page-likes" hidden>
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">页面点赞</h2>
+                  <button class="icon-btn refresh-btn" type="button" id="refreshPageLikesBtn" title="刷新" aria-label="刷新">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><use href="#icon-refresh" /></svg>
+                  </button>
+                </div>
+                <p class="hint" id="pageLikesMeta" style="margin-top: 0">加载中…</p>
+                <div class="manage-list" id="pageLikesList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="sheet-mask sheet-mask--center" id="engageMask" aria-hidden="true">
+      <div class="sheet sheet--dialog sheet--engage" role="dialog" aria-labelledby="engageTitle">
+        <h2 id="engageTitle">管理</h2>
+        <p class="hint engage-post-meta" id="engagePostMeta"></p>
+        <div class="manage-list manage-list--compact engage-dialog-list" id="engageList"></div>
+        <div class="sheet-actions">
+          <button class="btn secondary" type="button" id="engageClose">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet-mask sheet-mask--center" id="editPostMask" aria-hidden="true">
+      <div class="sheet sheet--dialog" role="dialog" aria-labelledby="editPostTitle">
+        <h2 id="editPostTitle">编辑动态</h2>
+        <input type="hidden" id="editPostId" />
+        <div class="form-field form-field--compact">
+          <label for="editPostTime">发布时间</label>
+          <input id="editPostTime" type="datetime-local" />
+        </div>
+        <div class="form-field form-field--body">
+          <div class="form-field-head">
+            <label for="editPostContent">正文</label>
+            <button class="btn-text" type="button" id="editPostPreviewToggle">预览</button>
+          </div>
+          <div class="edit-post-body" id="editPostBody">
+            <textarea id="editPostContent" maxlength="4000" placeholder="写点什么…&#10;图片用 Markdown：![](链接)"></textarea>
+            <div class="edit-post-preview" id="editPostPreview" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="sheet-actions" style="justify-content: space-between">
+          <button class="btn danger" type="button" id="editPostDelete">删除</button>
+          <div style="display: flex; gap: 8px">
+            <button class="btn secondary" type="button" id="editPostCancel">取消</button>
+            <button class="btn" type="button" id="editPostSave">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/js/settings.js"></script>
+  </body>
+</html>

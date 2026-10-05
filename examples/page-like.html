@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>文章点赞接入示例</title>
+    <style>
+      body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+      .like { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #ddd; background: #fff; border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+      .like.is-on { border-color: #df9193; color: #d4797c; }
+      code, pre { background: #f6f6f6; border-radius: 6px; }
+      pre { padding: 12px; overflow: auto; font-size: 13px; }
+      #pageLikeMsg { color: #b15b5e; }
+    </style>
+  </head>
+  <body>
+    <h1>Hugo 文章点赞</h1>
+    <p>Memos 设置里打开启用开关，博客只填 API 地址。不要把管理员密码写进页面。</p>
+    <button type="button" class="like" id="pageLikeBtn" aria-pressed="false">♡ <span id="pageLikeCount">0</span></button>
+    <p id="pageLikeMsg"></p>
+
+    <h2>Hugo 配置示例</h2>
+    <pre><code>params:
+  memosLike:
+    enabled: true
+    api: "https://aiovtue-memos.xxx.workers.dev"</code></pre>
+
+    <script>
+      window.HUGO_MEMOS_LIKE = {
+        enabled: true,
+        api: "https://aiovtue-memos.xxx.workers.dev",
+        url: location.href,
+      };
+    </script>
+    <script src="/js/page-like.js"></script>
+  </body>
+</html>

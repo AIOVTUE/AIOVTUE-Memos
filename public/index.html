@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#df9193" />
+    <title>动态</title>
+    <script src="/js/theme-boot.js"></script>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div class="sheet-mask" id="loginMask" aria-hidden="true">
+      <div class="sheet login-sheet" role="dialog" aria-labelledby="loginTitle">
+        <h2 id="loginTitle">管理登录</h2>
+        <p class="hint" id="loginHint">账号密码保存在数据库。</p>
+        <div class="form-field form-field--compact">
+          <label for="loginUsername">账号</label>
+          <input id="loginUsername" type="text" maxlength="32" autocomplete="username" placeholder="管理员账号" />
+        </div>
+        <div class="form-field form-field--compact">
+          <label for="loginPassword">密码</label>
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="管理密码" />
+        </div>
+        <div class="form-field form-field--compact" id="loginPassword2Field" hidden>
+          <label for="loginPassword2">确认密码</label>
+          <input id="loginPassword2" type="password" autocomplete="new-password" placeholder="再输入一次" />
+        </div>
+        <div class="sheet-actions">
+          <button class="btn secondary" type="button" id="loginCancel">取消</button>
+          <button class="btn" type="button" id="loginSubmit">登录</button>
+        </div>
+      </div>
+    </div>
+
+    <article class="sakura-moments-page sakura-moments-page--memos">
+      <header class="sakura-page-header has-cover" id="pageHeader" data-page="moments">
+        <video
+          class="sakura-page-header__cover"
+          id="coverVideo"
+          muted
+          autoplay
+          loop
+          playsinline
+          preload="none"
+          hidden
+        ></video>
+        <img class="sakura-page-header__cover" id="coverImage" alt="" hidden />
+        <button class="compose-btn" id="composeBtn" title="发表" aria-label="发表" hidden>
+          <svg class="compose-btn__icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+          </svg>
+        </button>
+        <div class="cover-profile" id="coverProfile">
+          <div class="cover-profile__name" id="coverNickname">AIOVTUE-雪</div>
+          <div class="account-menu" id="accountMenu">
+            <button
+              class="cover-profile__avatar"
+              id="accountBtn"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded="false"
+              title="账号"
+            >
+              <span id="coverAvatar"></span>
+            </button>
+            <div class="account-dropdown" id="accountDropdown" hidden role="menu">
+              <a class="account-dropdown__item" href="/settings.html" id="loginMenuBtn" role="menuitem">登录</a>
+              <button class="account-dropdown__item" type="button" id="themeToggleBtn" role="menuitem">深色模式</button>
+              <a class="account-dropdown__item" href="/settings.html" id="settingsMenuItem" role="menuitem" hidden>设置</a>
+              <button class="account-dropdown__item" type="button" id="logoutBtn" role="menuitem" hidden>退出登录</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="moments-page moments-page--memos">
+        <div class="moments-feed" id="feed">
+          <p class="moments-feed__loading">加载中…</p>
+        </div>
+      </div>
+    </article>
+
+    <div class="sheet-mask" id="composeMask" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-labelledby="composeTitle">
+        <h2 id="composeTitle">发表动态</h2>
+        <div class="form-field form-field--compact">
+          <label for="composeTime">发布时间</label>
+          <input id="composeTime" type="datetime-local" />
+        </div>
+        <div class="form-field">
+          <label for="composeContent">正文</label>
+          <textarea id="composeContent" rows="6" maxlength="4000" placeholder="支持基本 Markdown：&#10;**粗体** *斜体* `代码` [链接](url)&#10;> 引用 · - 列表 · # 标题&#10;图片：![](链接)"></textarea>
+        </div>
+        <div class="sheet-actions">
+          <button class="btn secondary" type="button" id="composeCancel">取消</button>
+          <button class="btn" type="button" id="composeSubmit">发布</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sheet-mask sheet-mask--center" id="editPostMask" aria-hidden="true">
+      <div class="sheet sheet--dialog" role="dialog" aria-labelledby="editPostTitle">
+        <h2 id="editPostTitle">编辑动态</h2>
+        <input type="hidden" id="editPostId" />
+        <div class="form-field form-field--compact">
+          <label for="editPostTime">发布时间</label>
+          <input id="editPostTime" type="datetime-local" />
+        </div>
+        <div class="form-field form-field--body">
+          <div class="form-field-head">
+            <label for="editPostContent">正文</label>
+            <button class="btn-text" type="button" id="editPostPreviewToggle">预览</button>
+          </div>
+          <div class="edit-post-body" id="editPostBody">
+            <textarea id="editPostContent" maxlength="4000" placeholder="支持基本 Markdown：&#10;**粗体** *斜体* `代码` [链接](url)&#10;图片：![](链接)"></textarea>
+            <div class="edit-post-preview" id="editPostPreview" aria-hidden="true"></div>
+          </div>
+        </div>
+        <div class="sheet-actions sheet-actions--split">
+          <button class="btn danger" type="button" id="editPostDelete">删除</button>
+          <div class="sheet-actions__end">
+            <button class="btn secondary" type="button" id="editPostCancel">取消</button>
+            <button class="btn" type="button" id="editPostSave">保存</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+      <img id="lightboxImg" alt="预览" />
+    </div>
+
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>

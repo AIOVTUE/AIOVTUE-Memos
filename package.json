@@ -1,0 +1,25 @@
+{
+  "name": "aiovtue-memos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AIOVTUE-memos：Cloudflare Workers + D1 朋友圈式动态，评论点赞、WebDAV 备份、可嵌入 Hugo",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787 --ip 127.0.0.1",
+    "deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create hugo-memos",
+    "db:migrate:local": "wrangler d1 migrations apply hugo-memos --local",
+    "db:migrate:remote": "wrangler d1 migrations apply hugo-memos --remote",
+    "cf-typegen": "wrangler types",
+    "check": "tsc --noEmit",
+    "audit:api": "node scripts/security-audit.mjs"
+  },
+  "dependencies": {
+    "hono": "^4.9.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260906.1",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.34.0"
+  }
+}

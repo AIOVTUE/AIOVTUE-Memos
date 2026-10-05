@@ -1,0 +1,17 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+dist/
+*.log
+.idea/
+.vscode/
+hugo-blog-aiovtue/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+coverage/

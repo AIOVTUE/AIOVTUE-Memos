@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aiovtue-memos",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-06",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  // D1 实例名可沿用 hugo-memos（与 Worker 名分开）。database_id 请换成你自己的，不要提交别人的生产库 ID。
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hugo-memos",
+      "database_id": "<YOUR_D1_DATABASE_ID>",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    // 每天 18:00 UTC（北京时间次日 02:00）检查一次；是否备份由设置里的周期决定
+    "crons": ["0 18 * * *"]
+  }
+}
