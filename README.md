@@ -51,8 +51,9 @@ Worker 名：`aiovtue-memos`。线上地址一般是 `https://aiovtue-memos.<你
 ```bash
 npm install
 npm run db:migrate:local
-# 可选：灌入本地演示动态（勿对 --remote 执行）
+# 可选：灌入本地演示动态 / 设置模版（勿对 --remote 执行）
 npx wrangler d1 execute hugo-memos --local --file=./scripts/seed-local-demo.sql
+npx wrangler d1 execute hugo-memos --local --file=./scripts/seed-local-settings.sql
 npm run dev
 ```
 
