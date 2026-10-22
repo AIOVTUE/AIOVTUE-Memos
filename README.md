@@ -18,7 +18,7 @@
   <a href="#简介">简介</a> ·
   <a href="#部署">快速开始</a> 
 </p>
-<p align="center">⭐ 如果 AIOVTUE-Memos 对你有帮助，欢迎<a href="https://github.com/AIOVTUE/AIOVTUE-CMS-gen">点个 Star</a>。</p>
+<p align="center">⭐ 如果 AIOVTUE-Memos 对你有帮助，欢迎<a href="https://github.com/AIOVTUE/AIOVTUE-Memos">点个 Star</a>。</p>
 
 ---
 
