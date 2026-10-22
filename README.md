@@ -15,11 +15,13 @@
 <p align="center">
   <a href="https://daily.yybb.us/moments/">前往预览</a> ·
   <a href="https://aiovtue.yybb.us/memos/overview">文档</a> ·
-  <a href="###快速开始">快速开始</a> ·
-  <a href="###使用教程">使用教程</a> 
+  <a href="#简介">简介</a> ·
+  <a href="#部署">快速开始</a> 
 </p>
 <p align="center">⭐ 如果 AIOVTUE-Memos 对你有帮助，欢迎<a href="https://github.com/AIOVTUE/AIOVTUE-CMS-gen">点个 Star</a>。</p>
+
 ---
+
 ### 简介
 *AIOVTUE-Memos*  是一个动态的朋友圈项目，支持api调用动态数据，接入博客网站后可以再不重新部署的情况下实时更新自己的动态数据文件，AIOVTUE-Memos  提供动态页面数据与文章点赞相关 API，也可单独访问动态站点，整个项目完全托管于cloudflare，使用D1作为数据库，线上预览：[https://dongtai.yybb.us/](https://dongtai.yybb.us/)
 ### 界面预览
