@@ -1,4 +1,3 @@
--- Unify mail_from; copy from legacy Resend/CF fields when empty
 INSERT INTO settings (key, value)
 SELECT 'mail_from', COALESCE(
   (SELECT value FROM settings WHERE key = 'mail_from_resend' AND value != ''),

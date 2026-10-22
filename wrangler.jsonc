@@ -13,11 +13,11 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
-  // D1 实例名可沿用 hugo-memos（与 Worker 名分开）。database_id 请换成你自己的，不要提交别人的生产库 ID。
+  // D1 名称与 Worker 均为 aiovtue-memos。database_id 请换成你自己的，不要提交别人的生产库 ID。
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "hugo-memos",
+      "database_name": "aiovtue-memos",
       "database_id": "<YOUR_D1_DATABASE_ID>",
       "migrations_dir": "migrations"
     }

@@ -20,8 +20,7 @@ npx wrangler secret put SECRET_ENCRYPTION_KEY
 | GitHub 账号 | 导入仓库自动构建 |
 | 本仓库 | 推送到远程 |
 
-Worker 配置名：`aiovtue-memos`（须与 Dashboard 一致）。  
-D1 配置名：`hugo-memos`（可沿用已有库，不必改名）。
+Worker / D1 配置名：`aiovtue-memos`（须与 Dashboard、`wrangler.jsonc` 一致）。
 
 ---
 
@@ -51,11 +50,11 @@ git push -u origin main
 ## 第二步：创建 D1
 
 1. Dashboard → **Storage & Databases** → **D1** → **Create**
-2. 名称可用 `hugo-memos`（须与 `wrangler.jsonc` 的 `database_name` 一致）
+2. 名称用 `aiovtue-memos`（须与 `wrangler.jsonc` 的 `database_name` 一致）
 3. 复制 **Database ID**
 
 ```text
-database_name = hugo-memos
+database_name = aiovtue-memos
 database_id   = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
@@ -78,7 +77,7 @@ npm run db:migrate:remote
 npm run db:migrate:local
 ```
 
-**仅用网页 Console：** 按文件名顺序执行每一个 `.sql`（`0001` → `0017`）。某条提示「已存在」可跳过该文件。
+**仅用网页 Console（不推荐）：** 按文件名顺序执行每一个 `.sql`（`0001` → `0017`）。某条提示「已存在」可跳过该文件。迁移文件已不含 `--` 注释，避免网页把换行收成一行后整段被注释掉。仍更推荐命令行 `npm run db:migrate:remote`。`0004`–`0006` 为占位（`SELECT 1`），可跳过。
 
 ---
 
@@ -92,7 +91,7 @@ npm run db:migrate:local
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "hugo-memos",
+      "database_name": "aiovtue-memos",
       "database_id": "这里粘贴你的 D1 UUID",
       "migrations_dir": "migrations"
     }

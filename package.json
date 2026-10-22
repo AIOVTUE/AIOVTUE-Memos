@@ -7,9 +7,9 @@
   "scripts": {
     "dev": "wrangler dev --port 8787 --ip 127.0.0.1",
     "deploy": "wrangler deploy",
-    "db:create": "wrangler d1 create hugo-memos",
-    "db:migrate:local": "wrangler d1 migrations apply hugo-memos --local",
-    "db:migrate:remote": "wrangler d1 migrations apply hugo-memos --remote",
+    "db:create": "wrangler d1 create aiovtue-memos",
+    "db:migrate:local": "wrangler d1 migrations apply aiovtue-memos --local",
+    "db:migrate:remote": "wrangler d1 migrations apply aiovtue-memos --remote",
     "cf-typegen": "wrangler types",
     "check": "tsc --noEmit",
     "audit:api": "node scripts/security-audit.mjs"

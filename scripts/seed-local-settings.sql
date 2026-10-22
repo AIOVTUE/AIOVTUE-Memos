@@ -1,5 +1,5 @@
 -- 仅本地：把设置页字段写成模版占位数据（不含管理员账号）。
--- npx wrangler d1 execute hugo-memos --local --file=./scripts/seed-local-settings.sql
+-- npx wrangler d1 execute aiovtue-memos --local --file=./scripts/seed-local-settings.sql
 -- 禁止 --remote
 
 INSERT INTO settings (key, value) VALUES ('nickname', 'AIOVTUE-雪')

@@ -1,4 +1,3 @@
--- 已发送邮件记录（管理端列表：发件时间 + 收件人）
 CREATE TABLE IF NOT EXISTS mail_log (
   id TEXT PRIMARY KEY,
   to_email TEXT NOT NULL,

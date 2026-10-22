@@ -1,4 +1,3 @@
--- 可自定义的评论 / 回复邮件模板（主题 + 正文）
 INSERT OR IGNORE INTO settings (key, value) VALUES (
   'mail_tpl_comment_subject',
   '【{{site_title}}】{{event}}：{{author}}'

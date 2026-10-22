@@ -2,7 +2,7 @@
 
 Cloudflare Workers + D1 上的朋友圈式动态：自带时间线和管理后台，也提供 JSON API，可挂到 Hugo 等静态博客。
 
-Worker 名：`aiovtue-memos`。线上地址一般是 `https://aiovtue-memos.<你的子域>.workers.dev`（或自定义域名）。D1 实例在配置里仍叫 `hugo-memos`，与 Worker 名分开，换名不会换库。
+Worker / D1 名：`aiovtue-memos`。线上地址一般是 `https://aiovtue-memos.<你的子域>.workers.dev`（或自定义域名）。
 
 ## 功能
 
@@ -52,8 +52,8 @@ Worker 名：`aiovtue-memos`。线上地址一般是 `https://aiovtue-memos.<你
 npm install
 npm run db:migrate:local
 # 可选：灌入本地演示动态 / 设置模版（勿对 --remote 执行）
-npx wrangler d1 execute hugo-memos --local --file=./scripts/seed-local-demo.sql
-npx wrangler d1 execute hugo-memos --local --file=./scripts/seed-local-settings.sql
+npx wrangler d1 execute aiovtue-memos --local --file=./scripts/seed-local-demo.sql
+npx wrangler d1 execute aiovtue-memos --local --file=./scripts/seed-local-settings.sql
 npm run dev
 ```
 

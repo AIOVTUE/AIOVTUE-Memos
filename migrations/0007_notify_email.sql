@@ -1,4 +1,3 @@
--- Comment email notification settings (all via Resend)
 INSERT OR IGNORE INTO settings (key, value) VALUES ('notify_enabled', '1');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('admin_email', '');
 INSERT OR IGNORE INTO settings (key, value) VALUES ('mail_from', '');

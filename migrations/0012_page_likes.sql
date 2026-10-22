@@ -1,4 +1,3 @@
--- Blog article likes keyed by URL path (domain ignored)
 CREATE TABLE IF NOT EXISTS page_likes (
   path TEXT PRIMARY KEY,
   like_count INTEGER NOT NULL DEFAULT 0,

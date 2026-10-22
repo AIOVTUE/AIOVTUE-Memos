@@ -1,4 +1,3 @@
--- 站点设置（头像、昵称、封面等）
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
@@ -12,7 +11,6 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('site_description', '记录生活的点滴'),
   ('bio', '');
 
--- 动态
 CREATE TABLE IF NOT EXISTS posts (
   id TEXT PRIMARY KEY,
   content TEXT NOT NULL DEFAULT '',
@@ -23,7 +21,6 @@ CREATE TABLE IF NOT EXISTS posts (
 
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
 
--- 评论
 CREATE TABLE IF NOT EXISTS comments (
   id TEXT PRIMARY KEY,
   post_id TEXT NOT NULL,
@@ -40,7 +37,6 @@ CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id);
 CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at);
 CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id);
 
--- 点赞（client_id 标识访客，无需登录）
 CREATE TABLE IF NOT EXISTS likes (
   id TEXT PRIMARY KEY,
   post_id TEXT NOT NULL,

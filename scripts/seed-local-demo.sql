@@ -1,5 +1,5 @@
 -- 仅本地演示数据。禁止 wrangler d1 execute ... --remote
--- npx wrangler d1 execute hugo-memos --local --file=./scripts/seed-local-demo.sql
+-- npx wrangler d1 execute aiovtue-memos --local --file=./scripts/seed-local-demo.sql
 
 DELETE FROM likes WHERE post_id LIKE 'demo_%';
 DELETE FROM comments WHERE post_id LIKE 'demo_%';

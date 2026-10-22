@@ -1,4 +1,3 @@
--- Enable switch for article likes (replaces separate like-password)
 INSERT OR IGNORE INTO settings (key, value) VALUES ('page_likes_enabled', '0');
 
 UPDATE settings
