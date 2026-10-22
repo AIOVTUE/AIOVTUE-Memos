@@ -1,6 +1,6 @@
 import { escapeHtml } from "./api.js";
 
-/** Allow http(s) and site-relative paths only. */
+/** Allow http(s) and site-relative paths only (aligned with server sanitizeRelativePath). */
 function safeUrl(raw) {
   const u = String(raw || "").trim();
   if (!u) return "";
@@ -16,12 +16,17 @@ function safeUrl(raw) {
   }
   if (!u.startsWith("/") || u.startsWith("//")) return "";
   let path = u.split(/[?#]/)[0] || "/";
-  try {
-    path = decodeURIComponent(path);
-  } catch {
-    return "";
+  for (let i = 0; i < 4; i++) {
+    try {
+      const next = decodeURIComponent(path);
+      if (next === path) break;
+      path = next;
+    } catch {
+      return "";
+    }
   }
-  if (/[\0\r\n\\]/.test(path) || path.includes("..")) return "";
+  path = path.replace(/\\/g, "/");
+  if (/[\0\r\n\s<>"'`]/.test(path) || /%2e/i.test(path)) return "";
   const parts = [];
   for (const seg of path.split("/")) {
     if (!seg || seg === ".") continue;

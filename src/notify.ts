@@ -9,7 +9,32 @@ export type NotifySettings = {
   site_title: string;
   site_url: string;
   nickname: string;
+  mail_tpl_comment_subject: string;
+  mail_tpl_comment_body: string;
+  mail_tpl_reply_subject: string;
+  mail_tpl_reply_body: string;
 };
+
+/** Default mail templates (also used when saved value is empty). */
+export const DEFAULT_MAIL_TEMPLATES = {
+  mail_tpl_comment_subject: "【{{site_title}}】{{event}}：{{author}}",
+  mail_tpl_comment_body: `{{nickname}}，你好：
+
+动态收到{{event}}。
+动态：{{post}}
+评论者：{{author}}
+内容：{{content}}
+
+查看：{{link}}`,
+  mail_tpl_reply_subject: "【{{site_title}}】{{author}} 回复了你",
+  mail_tpl_reply_body: `{{parent_author}}：
+
+{{author}} 回复了你的评论。
+动态：{{post}}
+回复：{{content}}
+
+查看：{{link}}`,
+} as const;
 
 export type CommentNotifyPayload = {
   postId: string;
@@ -23,6 +48,10 @@ export type CommentNotifyPayload = {
   parentAuthorEmail?: string;
   siteOrigin: string;
 };
+
+function normalizeEmail(value: string): string {
+  return String(value || "").trim().toLowerCase();
+}
 
 function looksLikeEmail(value: string): boolean {
   const v = value.trim();
@@ -71,6 +100,35 @@ function resolveMailFrom(settingsMap: Record<string, string>): string {
   );
 }
 
+const TPL_VAR_RE = /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g;
+
+function renderTemplate(tpl: string, vars: Record<string, string>): string {
+  return String(tpl || "").replace(TPL_VAR_RE, (_m, key: string) => vars[key] ?? "");
+}
+
+function textToNotifyHtml(text: string, link: string): string {
+  const blocks = String(text || "")
+    .split(/\n{2,}/)
+    .map((block) => block.trimEnd())
+    .filter((block) => block.length > 0);
+  if (!blocks.length) return "<p></p>";
+  const safeLink = link ? escapeHtml(link) : "";
+  return blocks
+    .map((block) => {
+      let html = escapeHtml(block).replace(/\n/g, "<br>\n");
+      if (safeLink && html.includes(safeLink)) {
+        html = html.split(safeLink).join(`<a href="${safeLink}">${safeLink}</a>`);
+      }
+      return `<p>${html}</p>`;
+    })
+    .join("\n");
+}
+
+function resolveTpl(settings: NotifySettings, key: keyof typeof DEFAULT_MAIL_TEMPLATES): string {
+  const raw = String(settings[key] || "").trim();
+  return raw || DEFAULT_MAIL_TEMPLATES[key];
+}
+
 function buildBodies(payload: CommentNotifyPayload, settings: NotifySettings, kind: "admin" | "reply") {
   const title = oneLine(settings.site_title || "动态", 80);
   const nick = oneLine(settings.nickname || "管理员", 40);
@@ -79,54 +137,33 @@ function buildBodies(payload: CommentNotifyPayload, settings: NotifySettings, ki
   const origin = safeSiteOrigin(payload.siteOrigin);
   const link = origin ? `${origin}/#post-${payload.postId}` : "";
   const author = oneLine(payload.authorName, 40);
+  const parentAuthor = oneLine(payload.parentAuthorName || "访客", 40);
+  const isReply = Boolean(payload.parentId);
+  const event = isReply ? `回复 @${parentAuthor}` : "新评论";
 
-  if (kind === "admin") {
-    const isReply = Boolean(payload.parentId);
-    const subject = isReply
-      ? `【${title}】新回复：${author}`
-      : `【${title}】新评论：${author}`;
-    const replyHint = isReply
-      ? `回复 @${oneLine(payload.parentAuthorName || "访客", 40)}`
-      : "新评论";
-    const text = [
-      `${nick}，你好：`,
-      "",
-      `动态收到${replyHint}。`,
-      `动态：${postLine}`,
-      `评论者：${author}`,
-      `内容：${commentLine}`,
-      "",
-      `查看：${link}`,
-    ].join("\n");
-    const html = `
-      <p>${escapeHtml(nick)}，你好：</p>
-      <p>动态收到<strong>${escapeHtml(replyHint)}</strong>。</p>
-      <p><strong>动态：</strong>${escapeHtml(postLine)}</p>
-      <p><strong>评论者：</strong>${escapeHtml(author)}</p>
-      <p><strong>内容：</strong>${escapeHtml(commentLine)}</p>
-      ${link ? `<p><a href="${escapeHtml(link)}">打开动态</a></p>` : ""}
-    `;
-    return { subject, text, html };
-  }
+  const vars: Record<string, string> = {
+    site_title: title,
+    nickname: nick,
+    author,
+    content: commentLine,
+    post: postLine,
+    link,
+    parent_author: parentAuthor,
+    event,
+  };
 
-  const parentNick = oneLine(payload.parentAuthorName || "你好", 40);
-  const subject = `【${title}】${author} 回复了你`;
-  const text = [
-    `${parentNick}：`,
-    "",
-    `${author} 回复了你的评论。`,
-    `动态：${postLine}`,
-    `回复：${commentLine}`,
-    "",
-    `查看：${link}`,
-  ].join("\n");
-  const html = `
-    <p>${escapeHtml(parentNick)}：</p>
-    <p><strong>${escapeHtml(author)}</strong> 回复了你的评论。</p>
-    <p><strong>动态：</strong>${escapeHtml(postLine)}</p>
-    <p><strong>回复：</strong>${escapeHtml(commentLine)}</p>
-    ${link ? `<p><a href="${escapeHtml(link)}">打开动态</a></p>` : ""}
-  `;
+  const subjectTpl =
+    kind === "reply"
+      ? resolveTpl(settings, "mail_tpl_reply_subject")
+      : resolveTpl(settings, "mail_tpl_comment_subject");
+  const bodyTpl =
+    kind === "reply"
+      ? resolveTpl(settings, "mail_tpl_reply_body")
+      : resolveTpl(settings, "mail_tpl_comment_body");
+
+  const subject = oneLine(renderTemplate(subjectTpl, vars), 200) || `【${title}】通知`;
+  const text = renderTemplate(bodyTpl, vars).replace(/\r\n/g, "\n").trimEnd();
+  const html = textToNotifyHtml(text, link);
   return { subject, text, html };
 }
 
@@ -159,7 +196,33 @@ function redactSecrets(text: string): string {
     .replace(/Bearer\s+\S+/gi, "Bearer [redacted]");
 }
 
+async function recordMailSent(db: D1Database, to: string): Promise<void> {
+  try {
+    const email = clampText(to, 120);
+    if (!looksLikeEmail(email)) return;
+    const id = crypto.randomUUID();
+    const sentAt = Date.now();
+    await db.prepare("INSERT INTO mail_log (id, to_email, sent_at) VALUES (?, ?, ?)").bind(id, email, sentAt).run();
+    // 控制体积：只保留最近 500 条
+    const countRow = await db.prepare("SELECT COUNT(*) AS n FROM mail_log").first<{ n: number }>();
+    const n = Number(countRow?.n) || 0;
+    if (n > 500) {
+      await db
+        .prepare(
+          `DELETE FROM mail_log WHERE id IN (
+             SELECT id FROM mail_log ORDER BY sent_at ASC LIMIT ?
+           )`,
+        )
+        .bind(n - 500)
+        .run();
+    }
+  } catch (err) {
+    console.error("[notify] mail_log", redactSecrets(String(err)));
+  }
+}
+
 async function sendViaResend(
+  env: Env,
   apiKey: string,
   to: string,
   fromEmail: string,
@@ -195,6 +258,7 @@ async function sendViaResend(
     }
     throw new Error(`Resend 发送失败（${res.status}）：${redactSecrets(detail)}`);
   }
+  await recordMailSent(env.DB, to);
 }
 
 /** Send a one-off test mail to verify Resend + address config. Throws on failure. */
@@ -237,7 +301,7 @@ export async function sendNotifyTestEmail(
     ${origin ? `<p>站点：<a href="${escapeHtml(origin)}">${escapeHtml(origin)}</a></p>` : ""}
   `;
 
-  await sendViaResend(apiKey, to, mailFrom, mailFromName, subject, text, html);
+  await sendViaResend(env, apiKey, to, mailFrom, mailFromName, subject, text, html);
 }
 
 /** Fire-and-forget comment notifications via Resend. Never throws to caller. */
@@ -255,6 +319,10 @@ export async function notifyCommentCreated(
       site_title: settingsMap.site_title || "动态",
       site_url: clampText(settingsMap.site_url, 300),
       nickname: settingsMap.nickname || "管理员",
+      mail_tpl_comment_subject: settingsMap.mail_tpl_comment_subject || "",
+      mail_tpl_comment_body: settingsMap.mail_tpl_comment_body || "",
+      mail_tpl_reply_subject: settingsMap.mail_tpl_reply_subject || "",
+      mail_tpl_reply_body: settingsMap.mail_tpl_reply_body || "",
     };
 
     if (settings.notify_enabled === "0") return;
@@ -276,21 +344,43 @@ export async function notifyCommentCreated(
     }
 
     const adminEmail = settings.admin_email;
+    const authorEmail = clampText(payload.authorEmail, 120);
+    const parentEmail = clampText(payload.parentAuthorEmail, 120);
+    const authorNorm = normalizeEmail(authorEmail);
+    const adminNorm = normalizeEmail(adminEmail);
+    const parentNorm = normalizeEmail(parentEmail);
+    /** 评论者邮箱与管理员邮箱相同（忽略大小写）才视为管理员评论 */
+    const isAdminEmailAuthor = Boolean(adminNorm && authorNorm && authorNorm === adminNorm);
+    const notified = new Set<string>();
     const tasks: Promise<void>[] = [];
 
-    if (looksLikeEmail(adminEmail)) {
-      const adminBody = buildBodies(payload, settings, "admin");
+    const enqueue = (to: string, kind: "admin" | "reply", logTag: string) => {
+      const key = normalizeEmail(to);
+      if (!key || notified.has(key)) return;
+      notified.add(key);
+      const body = buildBodies(payload, settings, kind);
       tasks.push(
         sendViaResend(
+          env,
           apiKey,
-          adminEmail,
+          to,
           settings.mail_from,
           settings.mail_from_name,
-          adminBody.subject,
-          adminBody.text,
-          adminBody.html,
-        ).catch((err) => console.error("[notify] admin Resend mail", redactSecrets(String(err)))),
+          body.subject,
+          body.text,
+          body.html,
+        ).catch((err) => console.error(`[notify] ${logTag}`, redactSecrets(String(err)))),
       );
+    };
+
+    // 回复：通知被回复者（自己回自己不发；邮箱无效则跳过）
+    if (payload.parentId && looksLikeEmail(parentEmail) && parentNorm !== authorNorm) {
+      enqueue(parentEmail, "reply", "reply Resend mail");
+    }
+
+    // 非管理员邮箱的评论 / 回复：通知管理员（与被回复者同址时上面已发过，这里去重）
+    if (!isAdminEmailAuthor && looksLikeEmail(adminEmail)) {
+      enqueue(adminEmail, "admin", "admin Resend mail");
     }
 
     await Promise.all(tasks);

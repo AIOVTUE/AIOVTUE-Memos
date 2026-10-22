@@ -1,3 +1,4 @@
+import { rewrapSecretsAfterTokenRotation } from "./secret-store";
 import { json } from "./utils";
 
 const PBKDF2_ITERATIONS = 100_000;
@@ -154,7 +155,7 @@ export async function ensureTokenSecret(db: D1Database, rec: AuthRecord): Promis
 }
 
 export async function updateAdminAccount(
-  db: D1Database,
+  env: Env,
   rec: AuthRecord,
   opts: { username?: string; password?: string },
 ): Promise<AuthRecord> {
@@ -162,12 +163,17 @@ export async function updateAdminAccount(
   if (opts.username && opts.username !== rec.username) {
     pairs.push({ key: "admin_username", value: opts.username });
   }
+  let newTokenSecret = "";
   if (opts.password) {
+    newTokenSecret = randomTokenSecret();
     pairs.push({ key: "admin_password_hash", value: await hashPassword(opts.password) });
-    pairs.push({ key: "admin_token_secret", value: randomTokenSecret() });
+    pairs.push({ key: "admin_token_secret", value: newTokenSecret });
   }
-  if (pairs.length) await writeSettings(db, pairs);
-  return getAuthRecord(db);
+  if (pairs.length) await writeSettings(env.DB, pairs);
+  if (newTokenSecret && rec.tokenSecret) {
+    await rewrapSecretsAfterTokenRotation(env, rec.tokenSecret, newTokenSecret);
+  }
+  return getAuthRecord(env.DB);
 }
 
 export async function getTokenSecret(env: Env): Promise<string> {

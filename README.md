@@ -51,6 +51,8 @@ Worker 名：`aiovtue-memos`。线上地址一般是 `https://aiovtue-memos.<你
 ```bash
 npm install
 npm run db:migrate:local
+# 可选：灌入本地演示动态（勿对 --remote 执行）
+npx wrangler d1 execute hugo-memos --local --file=./scripts/seed-local-demo.sql
 npm run dev
 ```
 
@@ -106,14 +108,18 @@ GET /api/health
 
 更完整：[embed 示例](examples/hugo-embed.html)。文章点赞：[说明](docs/PAGE-LIKES.md) · [示例](examples/page-like.html)。**不要把管理员密码写进博客页面。**
 
-## 开源时不要提交
+## 开源前检查
 
-- `.dev.vars`、`.env`、`.wrangler/`（含本地 D1 sqlite）
-- 真实的 `database_id`、Resend Key、WebDAV 密码、管理员密码
-- 从设置页导出的动态 JSON（可能含私人内容）
+详细清单见 [安全说明](docs/SECURITY.md)「开源 / 公开仓库前请核对」。摘要：
 
-默认昵称 / 头像 / 封面会随仓库公开，开源前请换成你愿意公开的素材。
+| 不要提交 | 仓库应保持 |
+|----------|------------|
+| `.dev.vars`、`.env`、`.wrangler/` | `wrangler.jsonc` 的 `database_id` 为 `<YOUR_D1_DATABASE_ID>` |
+| 真实 D1 ID、Resend / WebDAV / 管理密码 | 示例域名用 `xxx.workers.dev` 等占位 |
+| 导出的动态 JSON、含隐私的截图 | 默认昵称与 `public/img` 素材为你愿意公开的内容 |
+
+Fork 后请立刻换成自己的 D1 ID 再部署；**不要把生产 ID 推回公开仓库。**
 
 ## 许可
 
-MIT
+[MIT](LICENSE)

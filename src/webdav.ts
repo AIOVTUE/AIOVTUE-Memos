@@ -24,6 +24,16 @@ function isBlockedDavHost(host: string): boolean {
   if (h === "localhost" || h.endsWith(".localhost")) return true;
   if (h === "0.0.0.0" || h === "::" || h === "::1") return true;
   if (h === "169.254.169.254" || h.endsWith(".internal")) return true;
+  if (h.includes(":")) {
+    // IPv6: link-local, unique-local (fc00::/7), IPv4-mapped private
+    if (h.startsWith("fe80:")) return true;
+    const head = h.split(":")[0] || "";
+    if (/^f[cd][0-9a-f]{0,2}$/i.test(head)) return true;
+    if (h.startsWith("::ffff:")) {
+      const mapped = h.slice("::ffff:".length);
+      if (isBlockedDavHost(mapped)) return true;
+    }
+  }
   const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (m) {
     const a = [Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4])];

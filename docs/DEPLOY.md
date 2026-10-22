@@ -4,7 +4,11 @@
 
 控制台：[https://dash.cloudflare.com](https://dash.cloudflare.com)
 
-管理员账号、跨域、Resend Key、WebDAV 都写在 **D1**，不必再配 Worker Secrets（加密盐来自库里的 `admin_token_secret`）。
+管理员账号、跨域、Resend Key、WebDAV 密码都写在 **D1**（设置页）。加密默认用库内 `admin_token_secret`；生产建议额外配置 Worker Secret `SECRET_ENCRYPTION_KEY`（密钥不进 D1，见 [SECURITY.md](./SECURITY.md)）：
+
+```bash
+npx wrangler secret put SECRET_ENCRYPTION_KEY
+```
 
 ---
 
@@ -24,11 +28,11 @@ D1 配置名：`hugo-memos`（可沿用已有库，不必改名）。
 ## 总览
 
 ```text
-① 代码进 GitHub；把 wrangler.jsonc 的 database_id 换成你自己的（仓库里是占位符）
-② 创建 D1，执行全部迁移（0001–0015）
+① Fork / 克隆后：把 wrangler.jsonc 的 database_id 换成你自己的（仓库里必须是占位符，勿提交真实 ID）
+② 创建 D1，执行全部迁移（0001–0017）
 ③ 导入仓库部署 Worker（会带上每天一次的 Cron）
 ④ 立刻打开网站完成管理员初始化
-⑤ 生产填写 CORS；可选：邮件、文章点赞、WebDAV、自定义域名
+⑤ 生产填写 CORS；可选：SECRET_ENCRYPTION_KEY、邮件、文章点赞、WebDAV、自定义域名
 ```
 
 ---
@@ -59,7 +63,7 @@ database_id   = xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
 ## 第三步：迁移（建表）
 
-必须跑完 `migrations/` 下 **全部** SQL（目前 `0001_init.sql` … `0015_webdav.sql`）。只跑 `0001` 会缺管理员字段、跨域、文章点赞、WebDAV 等。
+必须跑完 `migrations/` 下 **全部** SQL（目前 `0001_init.sql` … `0017_mail_templates.sql`）。只跑 `0001` 会缺管理员字段、跨域、文章点赞、WebDAV、邮件记录等。
 
 **推荐（命令行）：**
 
@@ -74,7 +78,7 @@ npm run db:migrate:remote
 npm run db:migrate:local
 ```
 
-**仅用网页 Console：** 按文件名顺序执行每一个 `.sql`（`0001` → `0015`）。某条提示「已存在」可跳过该文件。
+**仅用网页 Console：** 按文件名顺序执行每一个 `.sql`（`0001` → `0017`）。某条提示「已存在」可跳过该文件。
 
 ---
 
@@ -167,8 +171,8 @@ Git 推送后 Cloudflare 自动构建。有新 SQL 时再执行 `npm run db:migr
 - [ ] **已初始化管理员**
 - [ ] 生产已限制 CORS Origin
 - [ ] `/api/health`、`/`、`/settings.html` 正常
-- [ ] 未提交 `.dev.vars` 或明文密码
-- [ ]（可选）Resend / WebDAV / 文章点赞
+- [ ] 未提交 `.dev.vars`、明文密码、真实 `database_id`
+- [ ]（可选）`SECRET_ENCRYPTION_KEY` / Resend / WebDAV / 文章点赞
 
 ---
 
@@ -181,7 +185,7 @@ Dashboard 名称必须等于 `aiovtue-memos`。
 完成 setup。不会清空动态。
 
 **500 / 缺表**  
-Bindings 是否有 `DB`；迁移是否跑到 `0015`。
+Bindings 是否有 `DB`；迁移是否跑到 `0017`。
 
 **CORS**  
 设置页填完整 Origin，如 `https://blog.example.com`。

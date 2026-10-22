@@ -16,8 +16,13 @@ import {
   verifyPassword,
 } from "./auth";
 import { filenameFromDate, parseMomentMarkdown, toMomentMarkdown, toMomentsIndexMarkdown } from "./markdown";
-import { isResendConfigured, notifyCommentCreated, sendNotifyTestEmail } from "./notify";
-import { encryptSettingSecret } from "./secret-store";
+import {
+  DEFAULT_MAIL_TEMPLATES,
+  isResendConfigured,
+  notifyCommentCreated,
+  sendNotifyTestEmail,
+} from "./notify";
+import { encryptSettingSecret, migratePlaintextSecrets } from "./secret-store";
 import {
   hasWebdavPassword,
   parseWebdavInterval,
@@ -71,6 +76,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   webdav_username: "",
   webdav_folder: "AIOVTUE-memos",
   webdav_interval: "daily",
+  ...DEFAULT_MAIL_TEMPLATES,
 };
 
 const PUBLIC_SETTINGS_HIDE = new Set([
@@ -97,6 +103,10 @@ const PUBLIC_SETTINGS_HIDE = new Set([
   "webdav_interval",
   "webdav_last_backup_at",
   "webdav_last_error",
+  "mail_tpl_comment_subject",
+  "mail_tpl_comment_body",
+  "mail_tpl_reply_subject",
+  "mail_tpl_reply_body",
 ]);
 
 /** Never expose or accept these via settings API (except resend_api_key handled specially). */
@@ -410,7 +420,7 @@ export function createApp() {
       if (passErr) return error(passErr);
       nextPassword = body.new_password;
     }
-    await updateAdminAccount(c.env.DB, rec, {
+    await updateAdminAccount(c.env, rec, {
       username: nextUsername,
       password: nextPassword,
     });
@@ -426,11 +436,18 @@ export function createApp() {
 
   // ---------- Settings ----------
   app.get("/api/settings", async (c) => {
-    const settings = await getSettingsMap(c.env.DB);
     const token = getBearerToken(c.req.raw);
-    if (!token) return json({ ok: true, data: publicSettingsView(settings) });
+    if (!token) {
+      const settings = await getSettingsMap(c.env.DB);
+      return json({ ok: true, data: publicSettingsView(settings) });
+    }
     const isAdmin = await verifyAdminToken(await getTokenSecret(c.env), token);
-    if (!isAdmin) return json({ ok: true, data: publicSettingsView(settings) });
+    if (!isAdmin) {
+      const settings = await getSettingsMap(c.env.DB);
+      return json({ ok: true, data: publicSettingsView(settings) });
+    }
+    await migratePlaintextSecrets(c.env);
+    const settings = await getSettingsMap(c.env.DB);
     return json({ ok: true, ...adminSettingsPayload(c.env, settings) });
   });
 
@@ -465,20 +482,45 @@ export function createApp() {
       "webdav_username",
       "webdav_folder",
       "webdav_interval",
+      "mail_tpl_comment_subject",
+      "mail_tpl_comment_body",
+      "mail_tpl_reply_subject",
+      "mail_tpl_reply_body",
     ] as const;
     const updates: Array<{ key: string; value: string }> = [];
     for (const key of allowed) {
       if (key in body) {
         const max =
-          key === "site_description" ||
-          key === "avatar" ||
-          key === "cover" ||
-          key === "site_url" ||
-          key === "cors_origins" ||
-          key === "webdav_url"
-            ? 500
-            : 300;
+          key === "mail_tpl_comment_body" || key === "mail_tpl_reply_body"
+            ? 4000
+            : key === "mail_tpl_comment_subject" || key === "mail_tpl_reply_subject"
+              ? 200
+              : key === "site_description" ||
+                  key === "avatar" ||
+                  key === "cover" ||
+                  key === "site_url" ||
+                  key === "cors_origins" ||
+                  key === "webdav_url"
+                ? 500
+                : 300;
         let value = clampText(body[key], key === "cors_origins" ? 2000 : max);
+        if (
+          key === "mail_tpl_comment_subject" ||
+          key === "mail_tpl_comment_body" ||
+          key === "mail_tpl_reply_subject" ||
+          key === "mail_tpl_reply_body"
+        ) {
+          // 保留正文换行；禁止 NUL
+          value = String(body[key] ?? "")
+            .replace(/\0/g, "")
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .slice(0, max);
+          if (key.endsWith("_subject")) {
+            value = value.trim();
+            if (/[\n]/.test(value)) return error("邮件主题不能包含换行");
+          }
+        }
         if (key === "avatar" || key === "cover") {
           value = sanitizeUrl(value, max);
           if (!value && clampText(body[key], max)) return error(`${key} 链接无效`);
@@ -564,6 +606,28 @@ export function createApp() {
     await c.env.DB.batch(stmts);
     const settings = await getSettingsMap(c.env.DB);
     return json({ ok: true, ...adminSettingsPayload(c.env, settings) });
+  });
+
+  app.get("/api/admin/mail-log", async (c) => {
+    const denied = await requireAdmin(c.req.raw, c.env);
+    if (denied) return denied;
+    const limit = parseLimit(c.req.query("limit") ?? null, 50, 100);
+    const offset = parseOffset(c.req.query("offset") ?? null);
+    const [rows, countRow] = await Promise.all([
+      c.env.DB.prepare("SELECT id, to_email, sent_at FROM mail_log ORDER BY sent_at DESC LIMIT ? OFFSET ?")
+        .bind(limit, offset)
+        .all<{ id: string; to_email: string; sent_at: number }>(),
+      c.env.DB.prepare("SELECT COUNT(*) AS total FROM mail_log").first<{ total: number }>(),
+    ]);
+    return json({
+      ok: true,
+      data: (rows.results || []).map((r) => ({
+        id: r.id,
+        to_email: r.to_email,
+        sent_at: Number(r.sent_at) || 0,
+      })),
+      meta: { total: Number(countRow?.total) || 0, limit, offset },
+    });
   });
 
   app.post("/api/admin/notify-test", async (c) => {

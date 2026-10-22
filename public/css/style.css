@@ -1145,6 +1145,8 @@ a.moment-comment-nick:hover {
 .form-field input,
 .form-field textarea {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   border: 1px solid var(--sakura-color-border);
   border-radius: 8px;
   padding: 10px 12px;
@@ -1240,6 +1242,8 @@ a.moment-comment-nick:hover {
 
 .sheet {
   width: min(720px, 100%);
+  max-width: 100%;
+  box-sizing: border-box;
   background: var(--sakura-color-surface);
   border-radius: 16px 16px 0 0;
   padding: 16px 16px 24px;
@@ -2039,6 +2043,10 @@ html[data-theme="dark"] .settings-card {
 
 .manage-row--action {
   grid-template-columns: minmax(0, 1fr) auto auto;
+  cursor: default;
+}
+
+.manage-row--mail {
   cursor: default;
 }
 

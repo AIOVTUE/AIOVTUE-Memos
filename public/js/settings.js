@@ -2,6 +2,26 @@ import { api, escapeHtml, fetchAuthStatus, formatDateTime, getToken, isVideoUrl,
 import { renderMarkdown } from "./markdown.js";
 import { initTheme, toggleTheme, getTheme } from "./theme.js";
 
+const DEFAULT_MAIL_TEMPLATES = {
+  mail_tpl_comment_subject: "【{{site_title}}】{{event}}：{{author}}",
+  mail_tpl_comment_body: `{{nickname}}，你好：
+
+动态收到{{event}}。
+动态：{{post}}
+评论者：{{author}}
+内容：{{content}}
+
+查看：{{link}}`,
+  mail_tpl_reply_subject: "【{{site_title}}】{{author}} 回复了你",
+  mail_tpl_reply_body: `{{parent_author}}：
+
+{{author}} 回复了你的评论。
+动态：{{post}}
+回复：{{content}}
+
+查看：{{link}}`,
+};
+
 const fields = [
   "site_title",
   "nickname",
@@ -20,6 +40,10 @@ const fields = [
   "webdav_folder",
   "webdav_interval",
   "webdav_enabled",
+  "mail_tpl_comment_subject",
+  "mail_tpl_comment_body",
+  "mail_tpl_reply_subject",
+  "mail_tpl_reply_body",
 ];
 const gate = document.getElementById("gate");
 const panel = document.getElementById("panel");
@@ -30,9 +54,18 @@ const engageMask = document.getElementById("engageMask");
 /** @type {Map<string, any>} */
 const postsCache = new Map();
 
-const POSTS_PAGE_SIZE = 12;
+const MANAGE_PAGE_SIZE = 10;
+const POSTS_PAGE_SIZE = MANAGE_PAGE_SIZE;
 let postsPage = 1;
 let postsTotal = 0;
+let commentsPage = 1;
+let commentsTotal = 0;
+let likesPage = 1;
+let likesTotal = 0;
+let pageLikesPage = 1;
+let pageLikesTotal = 0;
+let mailLogPage = 1;
+let mailLogTotal = 0;
 let postsSelectMode = false;
 /** @type {Set<string>} */
 const selectedPostIds = new Set();
@@ -192,6 +225,7 @@ function fillForm(data, meta) {
     else if (key === "webdav_enabled") el.checked = data[key] === "1";
     else if (key === "webdav_interval") el.value = data[key] === "weekly" || data[key] === "monthly" ? data[key] : "daily";
     else if (key === "webdav_folder" && !data[key]) el.value = "AIOVTUE-memos";
+    else if (key in DEFAULT_MAIL_TEMPLATES) el.value = data[key] || DEFAULT_MAIL_TEMPLATES[key];
     else el.value = data[key] || "";
   }
   const keyInput = document.getElementById("resend_api_key");
@@ -252,6 +286,7 @@ function switchTab(tab) {
     comments: "评论管理",
     likes: "点赞管理",
     "page-likes": "页面点赞",
+    mail: "邮件记录",
   };
   document.querySelectorAll(".settings-nav__item").forEach((btn) => {
     btn.classList.toggle("is-active", btn.dataset.tab === tab);
@@ -268,6 +303,7 @@ function switchTab(tab) {
   if (tab === "comments") loadCommentPosts();
   if (tab === "likes") loadLikePosts();
   if (tab === "page-likes") loadPageLikes();
+  if (tab === "mail") loadMailLog();
 }
 
 function openSettingsSidebar() {
@@ -363,10 +399,63 @@ function togglePostSelection(postId) {
   updatePostsSelectUi();
 }
 
+function managePageWindow(current, pages) {
+  if (pages <= 7) {
+    return Array.from({ length: pages }, (_, i) => i + 1);
+  }
+  const set = new Set([1, pages, current, current - 1, current + 1, current - 2, current + 2]);
+  const list = [...set].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+  const out = [];
+  for (let i = 0; i < list.length; i++) {
+    if (i > 0 && list[i] - list[i - 1] > 1) out.push("…");
+    out.push(list[i]);
+  }
+  return out;
+}
+
+function clearManagePager(pagerId) {
+  const pager = document.getElementById(pagerId);
+  if (!pager) return;
+  pager.hidden = true;
+  pager.innerHTML = "";
+}
+
+function renderManagePager(pagerId, attr, page, total, pageSize) {
+  const pager = document.getElementById(pagerId);
+  if (!pager) return;
+  const pages = Math.max(1, Math.ceil(total / pageSize) || 1);
+  const current = Math.min(Math.max(1, page), pages);
+  const items = managePageWindow(current, pages)
+    .map((item) => {
+      if (item === "…") return `<span class="manage-pager__ellipsis">…</span>`;
+      const active = item === current ? " is-active" : "";
+      return `<button type="button" class="manage-pager__btn${active}" data-${attr}="${item}" ${
+        item === current ? 'aria-current="page"' : ""
+      }>${item}</button>`;
+    })
+    .join("");
+  pager.hidden = false;
+  pager.innerHTML = `
+    <button type="button" class="manage-pager__btn" data-${attr}="prev" ${current <= 1 ? "disabled" : ""} aria-label="上一页">上一页</button>
+    ${items}
+    <button type="button" class="manage-pager__btn" data-${attr}="next" ${current >= pages ? "disabled" : ""} aria-label="下一页">下一页</button>
+  `;
+}
+
+function manageMetaText(total, page, pageSize, unit) {
+  const pages = Math.max(1, Math.ceil(total / pageSize) || 1);
+  return total > pageSize ? `共 ${total} ${unit} · 第 ${page} / ${pages} 页` : `共 ${total} ${unit}`;
+}
+
+function resolveManagePage(raw, currentPage) {
+  if (raw === "prev") return currentPage - 1;
+  if (raw === "next") return currentPage + 1;
+  return Number(raw);
+}
+
 async function loadPosts(page = postsPage) {
   const list = document.getElementById("postsList");
   const meta = document.getElementById("postsMeta");
-  const pager = document.getElementById("postsPager");
   meta.textContent = "加载中…";
   try {
     let nextPage = Math.max(1, Number(page) || 1);
@@ -381,73 +470,20 @@ async function loadPosts(page = postsPage) {
     postsPage = nextPage;
     postsCache.clear();
     for (const p of posts) postsCache.set(p.id, p);
-    meta.textContent =
-      postsTotal > POSTS_PAGE_SIZE
-        ? `共 ${postsTotal} 条动态 · 第 ${postsPage} / ${pages} 页`
-        : `共 ${postsTotal} 条动态`;
-    if (!posts.length) {
-      list.className = "manage-list manage-list--compact";
-      list.innerHTML = `<p class="manage-empty">暂无动态</p>`;
-      if (pager) {
-        pager.hidden = true;
-        pager.innerHTML = "";
-      }
-      updatePostsSelectUi();
-      return;
-    }
+    meta.textContent = manageMetaText(postsTotal, postsPage, POSTS_PAGE_SIZE, "条动态");
     list.className = "manage-list manage-list--compact";
-    list.innerHTML = renderPostRows(posts);
-    renderPostsPager();
+    if (!posts.length) {
+      list.innerHTML = `<p class="manage-empty">暂无动态</p>`;
+    } else {
+      list.innerHTML = renderPostRows(posts);
+    }
+    renderManagePager("postsPager", "posts-page", postsPage, postsTotal, POSTS_PAGE_SIZE);
     updatePostsSelectUi();
   } catch (err) {
     meta.textContent = err.message;
     list.innerHTML = "";
-    if (pager) {
-      pager.hidden = true;
-      pager.innerHTML = "";
-    }
+    clearManagePager("postsPager");
   }
-}
-
-function postsPageWindow(current, pages) {
-  if (pages <= 7) {
-    return Array.from({ length: pages }, (_, i) => i + 1);
-  }
-  const set = new Set([1, pages, current, current - 1, current + 1, current - 2, current + 2]);
-  const list = [...set].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
-  const out = [];
-  for (let i = 0; i < list.length; i++) {
-    if (i > 0 && list[i] - list[i - 1] > 1) out.push("…");
-    out.push(list[i]);
-  }
-  return out;
-}
-
-function renderPostsPager() {
-  const pager = document.getElementById("postsPager");
-  if (!pager) return;
-  const pages = Math.max(1, Math.ceil(postsTotal / POSTS_PAGE_SIZE) || 1);
-  if (postsTotal <= POSTS_PAGE_SIZE) {
-    pager.hidden = true;
-    pager.innerHTML = "";
-    return;
-  }
-  const current = Math.min(Math.max(1, postsPage), pages);
-  const items = postsPageWindow(current, pages)
-    .map((item) => {
-      if (item === "…") return `<span class="manage-pager__ellipsis">…</span>`;
-      const active = item === current ? " is-active" : "";
-      return `<button type="button" class="manage-pager__btn${active}" data-posts-page="${item}" ${
-        item === current ? 'aria-current="page"' : ""
-      }>${item}</button>`;
-    })
-    .join("");
-  pager.hidden = false;
-  pager.innerHTML = `
-    <button type="button" class="manage-pager__btn" data-posts-page="prev" ${current <= 1 ? "disabled" : ""} aria-label="上一页">上一页</button>
-    ${items}
-    <button type="button" class="manage-pager__btn" data-posts-page="next" ${current >= pages ? "disabled" : ""} aria-label="下一页">下一页</button>
-  `;
 }
 
 function closeEngageDialog() {
@@ -537,59 +573,111 @@ async function refreshEngageDialog() {
   }
 }
 
-async function loadCommentPosts() {
+async function loadMailLog(page = mailLogPage) {
+  const list = document.getElementById("mailLogList");
+  const meta = document.getElementById("mailLogMeta");
+  if (!list || !meta) return;
+  meta.textContent = "加载中…";
+  try {
+    let nextPage = Math.max(1, Number(page) || 1);
+    const offset = (nextPage - 1) * MANAGE_PAGE_SIZE;
+    const res = await api(`/api/admin/mail-log?limit=${MANAGE_PAGE_SIZE}&offset=${offset}`);
+    const rows = res.data || [];
+    mailLogTotal = Number(res.meta?.total) || 0;
+    const pages = Math.max(1, Math.ceil(mailLogTotal / MANAGE_PAGE_SIZE) || 1);
+    if (mailLogTotal > 0 && nextPage > pages) return loadMailLog(pages);
+    mailLogPage = nextPage;
+    meta.textContent = manageMetaText(mailLogTotal, mailLogPage, MANAGE_PAGE_SIZE, "封已发送");
+    list.className = "manage-list manage-list--compact";
+    if (!rows.length) {
+      list.innerHTML = `<p class="manage-empty">暂无发送记录</p>`;
+    } else {
+      list.innerHTML = rows
+        .map((row) => {
+          return `<article class="manage-row manage-row--mail">
+          <p class="manage-row__text">${escapeHtml(row.to_email || "")}</p>
+          <time class="manage-row__time">${formatDateTime(row.sent_at)}</time>
+        </article>`;
+        })
+        .join("");
+    }
+    renderManagePager("mailLogPager", "mail-page", mailLogPage, mailLogTotal, MANAGE_PAGE_SIZE);
+  } catch (err) {
+    meta.textContent = err.message;
+    list.innerHTML = "";
+    clearManagePager("mailLogPager");
+  }
+}
+
+async function loadCommentPosts(page = commentsPage) {
   const list = document.getElementById("commentsList");
   const meta = document.getElementById("commentsMeta");
   meta.textContent = "加载中…";
   try {
-    const res = await api("/api/admin/comment-posts?limit=100");
+    let nextPage = Math.max(1, Number(page) || 1);
+    const offset = (nextPage - 1) * MANAGE_PAGE_SIZE;
+    const res = await api(`/api/admin/comment-posts?limit=${MANAGE_PAGE_SIZE}&offset=${offset}`);
     const rows = res.data || [];
-    meta.textContent = `共 ${res.meta?.total ?? rows.length} 条有评论的动态`;
+    commentsTotal = Number(res.meta?.total) || 0;
+    const pages = Math.max(1, Math.ceil(commentsTotal / MANAGE_PAGE_SIZE) || 1);
+    if (commentsTotal > 0 && nextPage > pages) return loadCommentPosts(pages);
+    commentsPage = nextPage;
+    meta.textContent = manageMetaText(commentsTotal, commentsPage, MANAGE_PAGE_SIZE, "条有评论的动态");
     list.className = "manage-list manage-list--compact";
     if (!rows.length) {
       list.innerHTML = `<p class="manage-empty">暂无评论</p>`;
-      return;
-    }
-    list.innerHTML = rows
-      .map((p) => {
-        return `<article class="manage-row manage-row--engage" data-comment-post-id="${escapeHtml(p.id)}" data-post-excerpt="${escapeHtml(excerpt(p.content, 64) || "（无文字）")}" role="button" tabindex="0">
+    } else {
+      list.innerHTML = rows
+        .map((p) => {
+          return `<article class="manage-row manage-row--engage" data-comment-post-id="${escapeHtml(p.id)}" data-post-excerpt="${escapeHtml(excerpt(p.content, 64) || "（无文字）")}" role="button" tabindex="0">
           <p class="manage-row__text">${escapeHtml(excerpt(p.content, 64) || "（无文字）")}</p>
           <span class="manage-row__stats">${Number(p.comment_count) || 0} 条评论</span>
           <time class="manage-row__time">${formatDateTime(p.last_at || p.created_at)}</time>
         </article>`;
-      })
-      .join("");
+        })
+        .join("");
+    }
+    renderManagePager("commentsPager", "comments-page", commentsPage, commentsTotal, MANAGE_PAGE_SIZE);
   } catch (err) {
     meta.textContent = err.message;
     list.innerHTML = "";
+    clearManagePager("commentsPager");
   }
 }
 
-async function loadLikePosts() {
+async function loadLikePosts(page = likesPage) {
   const list = document.getElementById("likesList");
   const meta = document.getElementById("likesMeta");
   meta.textContent = "加载中…";
   try {
-    const res = await api("/api/admin/like-posts?limit=100");
+    let nextPage = Math.max(1, Number(page) || 1);
+    const offset = (nextPage - 1) * MANAGE_PAGE_SIZE;
+    const res = await api(`/api/admin/like-posts?limit=${MANAGE_PAGE_SIZE}&offset=${offset}`);
     const rows = res.data || [];
-    meta.textContent = `共 ${res.meta?.total ?? rows.length} 条有点赞的动态`;
+    likesTotal = Number(res.meta?.total) || 0;
+    const pages = Math.max(1, Math.ceil(likesTotal / MANAGE_PAGE_SIZE) || 1);
+    if (likesTotal > 0 && nextPage > pages) return loadLikePosts(pages);
+    likesPage = nextPage;
+    meta.textContent = manageMetaText(likesTotal, likesPage, MANAGE_PAGE_SIZE, "条有点赞的动态");
     list.className = "manage-list manage-list--compact";
     if (!rows.length) {
       list.innerHTML = `<p class="manage-empty">暂无点赞</p>`;
-      return;
-    }
-    list.innerHTML = rows
-      .map((p) => {
-        return `<article class="manage-row manage-row--engage" data-like-post-id="${escapeHtml(p.id)}" data-post-excerpt="${escapeHtml(excerpt(p.content, 64) || "（无文字）")}" role="button" tabindex="0">
+    } else {
+      list.innerHTML = rows
+        .map((p) => {
+          return `<article class="manage-row manage-row--engage" data-like-post-id="${escapeHtml(p.id)}" data-post-excerpt="${escapeHtml(excerpt(p.content, 64) || "（无文字）")}" role="button" tabindex="0">
           <p class="manage-row__text">${escapeHtml(excerpt(p.content, 64) || "（无文字）")}</p>
           <span class="manage-row__stats">${Number(p.like_count) || 0} 个赞</span>
           <time class="manage-row__time">${formatDateTime(p.last_at || p.created_at)}</time>
         </article>`;
-      })
-      .join("");
+        })
+        .join("");
+    }
+    renderManagePager("likesPager", "likes-page", likesPage, likesTotal, MANAGE_PAGE_SIZE);
   } catch (err) {
     meta.textContent = err.message;
     list.innerHTML = "";
+    clearManagePager("likesPager");
   }
 }
 
@@ -605,37 +693,46 @@ function syncPageLikesNav() {
   if (!enabled && pane && !pane.hidden) switchTab("site");
 }
 
-async function loadPageLikes() {
+async function loadPageLikes(page = pageLikesPage) {
   const list = document.getElementById("pageLikesList");
   const meta = document.getElementById("pageLikesMeta");
   if (!list || !meta) return;
   if (!pageLikesEnabled()) {
     meta.textContent = "未启用文章点赞";
     list.innerHTML = "";
+    clearManagePager("pageLikesPager");
     return;
   }
   meta.textContent = "加载中…";
   try {
-    const res = await api("/api/admin/page-likes?limit=200");
+    let nextPage = Math.max(1, Number(page) || 1);
+    const offset = (nextPage - 1) * MANAGE_PAGE_SIZE;
+    const res = await api(`/api/admin/page-likes?limit=${MANAGE_PAGE_SIZE}&offset=${offset}`);
     const rows = res.data || [];
-    meta.textContent = `共 ${res.meta?.total ?? rows.length} 个页面有点赞`;
+    pageLikesTotal = Number(res.meta?.total) || 0;
+    const pages = Math.max(1, Math.ceil(pageLikesTotal / MANAGE_PAGE_SIZE) || 1);
+    if (pageLikesTotal > 0 && nextPage > pages) return loadPageLikes(pages);
+    pageLikesPage = nextPage;
+    meta.textContent = manageMetaText(pageLikesTotal, pageLikesPage, MANAGE_PAGE_SIZE, "个页面有点赞");
     list.className = "manage-list manage-list--compact";
     if (!rows.length) {
       list.innerHTML = `<p class="manage-empty">暂无页面点赞</p>`;
-      return;
-    }
-    list.innerHTML = rows
-      .map((p) => {
-        return `<article class="manage-row manage-row--engage manage-row--action">
+    } else {
+      list.innerHTML = rows
+        .map((p) => {
+          return `<article class="manage-row manage-row--engage manage-row--action">
           <p class="manage-row__text">${escapeHtml(p.path || "/")}</p>
           <span class="manage-row__stats">${Number(p.like_count) || 0} 个赞</span>
           <time class="manage-row__time">${formatDateTime(p.updated_at)}</time>
         </article>`;
-      })
-      .join("");
+        })
+        .join("");
+    }
+    renderManagePager("pageLikesPager", "page-likes-page", pageLikesPage, pageLikesTotal, MANAGE_PAGE_SIZE);
   } catch (err) {
     meta.textContent = err.message;
     list.innerHTML = "";
+    clearManagePager("pageLikesPager");
   }
 }
 
@@ -832,21 +929,27 @@ document.getElementById("deleteSelectedPostsBtn").addEventListener("click", asyn
   }
 });
 
-document.getElementById("postsPager")?.addEventListener("click", async (e) => {
-  const btn = e.target.closest("[data-posts-page]");
-  if (!btn || btn.disabled) return;
-  const raw = btn.getAttribute("data-posts-page");
-  let page = postsPage;
-  if (raw === "prev") page = postsPage - 1;
-  else if (raw === "next") page = postsPage + 1;
-  else page = Number(raw);
-  if (!Number.isFinite(page) || page === postsPage) return;
-  try {
-    await loadPosts(page);
-  } catch (err) {
-    toast(err.message);
-  }
-});
+function bindManagePager(pagerId, attr, getPage, loadFn) {
+  document.getElementById(pagerId)?.addEventListener("click", async (e) => {
+    const btn = e.target.closest(`[data-${attr}]`);
+    if (!btn || btn.disabled) return;
+    const raw = btn.getAttribute(`data-${attr}`);
+    const current = getPage();
+    const page = resolveManagePage(raw, current);
+    if (!Number.isFinite(page) || page === current) return;
+    try {
+      await loadFn(page);
+    } catch (err) {
+      toast(err.message);
+    }
+  });
+}
+
+bindManagePager("postsPager", "posts-page", () => postsPage, loadPosts);
+bindManagePager("commentsPager", "comments-page", () => commentsPage, loadCommentPosts);
+bindManagePager("likesPager", "likes-page", () => likesPage, loadLikePosts);
+bindManagePager("pageLikesPager", "page-likes-page", () => pageLikesPage, loadPageLikes);
+bindManagePager("mailLogPager", "mail-page", () => mailLogPage, loadMailLog);
 document.getElementById("postsList").addEventListener("click", (e) => {
   const row = e.target.closest(".manage-row[data-post-id]");
   if (!row) return;
@@ -930,9 +1033,10 @@ document.getElementById("editPostDelete").addEventListener("click", async () => 
   }
 });
 
-document.getElementById("refreshCommentsBtn").addEventListener("click", () => loadCommentPosts());
-document.getElementById("refreshLikesBtn").addEventListener("click", () => loadLikePosts());
-document.getElementById("refreshPageLikesBtn")?.addEventListener("click", () => loadPageLikes());
+document.getElementById("refreshCommentsBtn").addEventListener("click", () => loadCommentPosts(commentsPage));
+document.getElementById("refreshLikesBtn").addEventListener("click", () => loadLikePosts(likesPage));
+document.getElementById("refreshPageLikesBtn")?.addEventListener("click", () => loadPageLikes(pageLikesPage));
+document.getElementById("refreshMailLogBtn")?.addEventListener("click", () => loadMailLog(mailLogPage));
 document.getElementById("page_likes_enabled")?.addEventListener("change", () => {
   syncPageLikesNav();
 });
@@ -1151,6 +1255,18 @@ document.getElementById("webdavBackupBtn")?.addEventListener("click", async () =
   } finally {
     if (btn) btn.disabled = false;
   }
+});
+
+document.getElementById("resetCommentTplBtn")?.addEventListener("click", () => {
+  document.getElementById("mail_tpl_comment_subject").value = DEFAULT_MAIL_TEMPLATES.mail_tpl_comment_subject;
+  document.getElementById("mail_tpl_comment_body").value = DEFAULT_MAIL_TEMPLATES.mail_tpl_comment_body;
+  toast("已填入默认评论模板，请保存");
+});
+
+document.getElementById("resetReplyTplBtn")?.addEventListener("click", () => {
+  document.getElementById("mail_tpl_reply_subject").value = DEFAULT_MAIL_TEMPLATES.mail_tpl_reply_subject;
+  document.getElementById("mail_tpl_reply_body").value = DEFAULT_MAIL_TEMPLATES.mail_tpl_reply_body;
+  toast("已填入默认回复模板，请保存");
 });
 
 document.getElementById("notifyTestBtn")?.addEventListener("click", async () => {

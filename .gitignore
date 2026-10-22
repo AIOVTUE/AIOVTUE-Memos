@@ -4,6 +4,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.dev.vars.example
 .DS_Store
 Thumbs.db
 dist/
@@ -15,3 +16,6 @@ hugo-blog-aiovtue/
 *.sqlite-shm
 *.sqlite-wal
 coverage/
+# 设置页导出等可能含私人动态
+*-export.json
+*-backup.json

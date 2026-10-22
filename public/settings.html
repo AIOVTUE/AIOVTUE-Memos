@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#df9193" />
     <title>站点设置</title>
+    <link rel="icon" href="/img/avator.webp" type="image/webp" />
     <script src="/js/theme-boot.js"></script>
     <link rel="stylesheet" href="/css/style.css" />
   </head>
@@ -91,6 +92,15 @@
                 />
               </svg>
               页面点赞
+            </button>
+            <button type="button" class="settings-nav__item" data-tab="mail">
+              <svg class="settings-nav__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2Zm0 4-8 5L4 8V6l8 5 8-5v2Z"
+                />
+              </svg>
+              邮件记录
             </button>
           </nav>
         </aside>
@@ -185,6 +195,58 @@
                   <button class="btn secondary" type="button" id="notifyTestBtn">发送测试邮件</button>
                 </div>
                 <p class="hint" id="notifyTestStatus"></p>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <div class="settings-card__lead">
+                    <h2 class="settings-card__title">评论邮件模板</h2>
+                    <button class="btn-text" type="button" id="resetCommentTplBtn">恢复默认</button>
+                  </div>
+                </div>
+                <p class="hint" style="margin-top: 0">
+                  发给管理员的通知。可用变量：
+                  <code>{{site_title}}</code>
+                  <code>{{nickname}}</code>
+                  <code>{{author}}</code>
+                  <code>{{content}}</code>
+                  <code>{{post}}</code>
+                  <code>{{link}}</code>
+                  <code>{{parent_author}}</code>
+                  <code>{{event}}</code>（新评论 / 回复 @昵称）
+                </p>
+                <div class="form-field form-field--compact">
+                  <label for="mail_tpl_comment_subject">主题</label>
+                  <input id="mail_tpl_comment_subject" maxlength="200" autocomplete="off" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="mail_tpl_comment_body">正文</label>
+                  <textarea id="mail_tpl_comment_body" rows="8" maxlength="4000" spellcheck="false"></textarea>
+                </div>
+              </div>
+
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <div class="settings-card__lead">
+                    <h2 class="settings-card__title">回复邮件模板</h2>
+                    <button class="btn-text" type="button" id="resetReplyTplBtn">恢复默认</button>
+                  </div>
+                </div>
+                <p class="hint" style="margin-top: 0">
+                  发给被回复者的通知。变量同上；常用
+                  <code>{{parent_author}}</code>、
+                  <code>{{author}}</code>、
+                  <code>{{content}}</code>、
+                  <code>{{link}}</code>。
+                </p>
+                <div class="form-field form-field--compact">
+                  <label for="mail_tpl_reply_subject">主题</label>
+                  <input id="mail_tpl_reply_subject" maxlength="200" autocomplete="off" />
+                </div>
+                <div class="form-field form-field--compact">
+                  <label for="mail_tpl_reply_body">正文</label>
+                  <textarea id="mail_tpl_reply_body" rows="8" maxlength="4000" spellcheck="false"></textarea>
+                </div>
               </div>
 
               <div class="settings-card">
@@ -344,6 +406,7 @@
                 </div>
                 <p class="hint" id="commentsMeta" style="margin-top: 0">加载中…</p>
                 <div class="manage-list" id="commentsList"></div>
+                <nav class="manage-pager" id="commentsPager" hidden aria-label="评论管理分页"></nav>
               </div>
             </div>
 
@@ -357,6 +420,7 @@
                 </div>
                 <p class="hint" id="likesMeta" style="margin-top: 0">加载中…</p>
                 <div class="manage-list" id="likesList"></div>
+                <nav class="manage-pager" id="likesPager" hidden aria-label="点赞管理分页"></nav>
               </div>
             </div>
 
@@ -370,6 +434,21 @@
                 </div>
                 <p class="hint" id="pageLikesMeta" style="margin-top: 0">加载中…</p>
                 <div class="manage-list" id="pageLikesList"></div>
+                <nav class="manage-pager" id="pageLikesPager" hidden aria-label="页面点赞分页"></nav>
+              </div>
+            </div>
+
+            <div class="settings-pane" data-pane="mail" hidden>
+              <div class="settings-card">
+                <div class="settings-card__head">
+                  <h2 class="settings-card__title">已发送邮件</h2>
+                  <button class="icon-btn refresh-btn" type="button" id="refreshMailLogBtn" title="刷新" aria-label="刷新">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><use href="#icon-refresh" /></svg>
+                  </button>
+                </div>
+                <p class="hint" id="mailLogMeta" style="margin-top: 0">加载中…</p>
+                <div class="manage-list" id="mailLogList"></div>
+                <nav class="manage-pager" id="mailLogPager" hidden aria-label="邮件记录分页"></nav>
               </div>
             </div>
           </div>

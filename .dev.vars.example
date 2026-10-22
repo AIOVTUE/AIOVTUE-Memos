@@ -1,1 +1,3 @@
-# 本地无需环境变量。管理员账号与跨域等均在设置页写入 D1。
+# 本地可选。生产请用：wrangler secret put SECRET_ENCRYPTION_KEY
+# 用于 AES 加密 Resend / WebDAV 密码；不设则回退到 D1 内的 admin_token_secret（改密时会自动重加密）。
+# SECRET_ENCRYPTION_KEY=请换成足够长的随机串
