@@ -186,6 +186,9 @@ Dashboard 名称必须等于 `aiovtue-memos`。
 **500 / 缺表**  
 Bindings 是否有 `DB`；迁移是否跑到 `0017`。
 
+**`UNIQUE constraint failed: settings.key`**  
+某条迁移在已有键上又 `INSERT`。拉最新迁移后重跑 `npm run db:migrate:remote`（失败的那条不会记为已应用）。
+
 **CORS**  
 设置页填完整 Origin，如 `https://blog.example.com`。
 
