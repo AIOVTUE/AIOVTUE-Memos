@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://aiovtue.yybb.us/cms/overview">
-    <img src="https://aiovtue.yybb.us/logo.webp" width="92" alt="AIOVTUE-CMS-gen logo" />
+  <a href="https://aiovtue.yybb.us/memos/overview">
+    <img src="https://aiovtue.yybb.us/logo.webp" width="92" alt="AIOVTUE-Memos logo" />
   </a>
 </p>
 
